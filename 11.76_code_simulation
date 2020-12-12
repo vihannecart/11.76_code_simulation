@@ -1,0 +1,287 @@
+import math  
+import numpy as np  
+import matplotlib.pyplot as plt  
+  
+  
+##Constantes:  
+  
+g = 9.81                # constante de gravité  
+rho = 997               # masse volumique de l'eau  
+radians = 180/math.pi   # constante convertissant les degrés en radians (fait maison)  
+end = 10                # temps max affiché sur les graphiques (on le pose)  
+dt = 0.0001             # delta temps (on le pose)  
+  
+  
+##Données:  
+  
+M_totale = 5                # masse totale de la grue  
+H_imm = 0.05                # hauteur de la partie immergée de la barge  
+H_cg =0.036                 # hauteur du centre de gravité  
+H = 0.7                     # hauteur et  
+L = 0.6                     # longueur et  
+l = 0.6                     # largeur de la grue  
+M_poid = 0.2                # masse de l'objet déplacé  
+I = 1                       # inertie de la grue  
+D = 10                      # coefficient d'amortissement  
+d_max = 0.7                 # distance maximale de déplacement de l'objet déplacé  
+v_deplacement = 0.1         # vitesse de déplacement de l'objet déplacé  
+  
+  
+##Tableau:  
+  
+    # On crée différents tableaux:  
+        # np.arrange(a, b, c) initialise un tabeau avec des valeurs commençant à a et augmentant de c jusqu'à atteindre b  
+        # np.empty_like(x) initialise un tableau vide de même dimension que le tableau x  
+  
+t = np.arange(0, end, dt)  
+theta = np.empty_like(t)  
+C = np.empty_like(t)  
+a = np.empty_like(t)  
+w = np.empty_like(t)  
+t_max = np.empty_like(t)  
+d_increase = np.arange(0, 2, 0.01)  
+d_theta = np.empty_like(d_increase)  
+Ca = np.empty_like(t)  
+Eg = np.empty_like(t)  
+Ec = np.empty_like(t)  
+  
+  
+##Fonctions:  
+  
+def simulation():  
+  
+    """ On calcule l'angle d'inclinaison, la vitesse angulaire, 
+        l'accélération angulaire et le couple résultant de la grue en fonction du temps """  
+  
+    d = 0.7                         # distance de la base de la grue à l'endroit auquel on soulève le poids  
+    C[0] = d*M_poid*g               # couple résultant  
+    a[0] = d*M_poid*g/I             # accélération angulaire  
+    w[0] = 0                        # vitesse angulaire  
+    theta[0] = -0.045               # angle d'inclinaison de la grue  
+    t_max[0] = 5.14                 # angle de submersion (theta_max)  
+    Ca[0] = C[0]                    # couple application  
+    for i in range(len(t)-1):  
+        theta[i+1]=theta[i]+w[i]*dt  
+        C[i+1]=(d*M_poid*g) - (L*l*H_imm*rho*g)*math.sin(theta[i])*((L**2)/(12*H_imm)-(((L**2)*(math.tan(theta[i])**2)/4)-3*(H_imm**2))/(6*H_imm))+(M_totale*g*(-H_cg*math.sin(theta[i])))  
+        a[i+1]=(-D*w[i]+C[i])/I  
+        w[i+1]=w[i]+a[i]*dt  
+        t_max[i+1]=t_max[i]  
+        Ca[i+1]=d*M_poid*g  
+    print("angle initial: " + str(theta[0]*radians))  
+    print("angle final: " + str(theta[-1]*radians))  
+    print("delta angle: " + str((theta[-1]-theta[0])*radians))  
+  
+  
+def graphique():  
+  
+  
+    """ Crée des graphiques correspondant aux tableaux calculés dans la fonction simulation() """  
+  
+  
+    # graphiques de l'accélération angulaire, de la vitesse angulaire et de l'angle en fonction de temps  
+  
+    plt.figure(1)  
+    plt.subplot(3, 1, 1)  
+    plt.plot(t, a, 'red', label='a')  
+    plt.xlabel("temps(s)")  
+    plt.ylabel("a angulaire (rad/s**2)")  
+    plt.legend()  
+    plt.subplot(3, 1, 2)  
+    plt.plot(t, w, 'orange', label='w')  
+    plt.xlabel("temps(s)")  
+    plt.ylabel("v angulaire (rad/s)")  
+    plt.legend()  
+    plt.subplot(3, 1, 3)  
+    plt.plot(t, theta * radians, 'green', label='theta')  
+    plt.plot(t, t_max, '--r', label='theta max')  
+    plt.xlabel("temps(s)")  
+    plt.ylabel("inclinaison (rad)")  
+    plt.legend()  
+    plt.show()  
+  
+  
+    # graphique du couple résultant en fonction du temps  
+  
+    plt.figure(2)  
+    plt.plot(t, C, 'red', label='C')  
+    plt.legend()  
+    plt.xlabel("temps (s)")  
+    plt.ylabel("couple resultant (N*m)")  
+    plt.show()  
+  
+  
+    # graphique de l'inclinaison de la grue en fonction de la distance de l'objet déplacé avec différentes masses  
+  
+    plt.figure(3)  
+    theta_d(0.05)  
+    plt.plot(d_increase, d_theta, 'orange', label='m=0.05')  
+    theta_d(0.1)  
+    plt.plot(d_increase, d_theta, 'm', label='m=0.1')  
+    theta_d(0.2)  
+    plt.plot(d_increase, d_theta, 'r', label='m=0.2')  
+    theta_d(0.4)  
+    plt.plot(d_increase, d_theta, 'blue', label='m=0.4')  
+    theta_d(0.6)  
+    plt.plot(d_increase, d_theta, 'green', label='m=0.6')  
+    plt.grid()  
+    plt.xlabel("distance(m)")  
+    plt.ylabel("inclinaison")  
+    plt.legend()  
+    plt.show  
+  
+  
+    # graphique de la vitesse angulaire en fonction de l'angle  
+  
+    plt.figure(4)  
+    plt.plot(theta * radians, w * radians, label='angle de phase')  
+    plt.xlabel("theta (degre)")  
+    plt.ylabel('v angulaire (degre/s)')  
+    plt.legend()  
+    plt.show()  
+  
+  
+def energy():  
+  
+    """ Crée un graphique des différantes énergies en fonction du temps """  
+  
+    Eg[0] = 0.005*M_totale*g        # énergie gravitationelle  
+    Ek = I*w*w/2                    # énergie cinétique  
+    Ea = -Ca*theta                  # énergie liée au couple d'application  
+    for i in range(len(t)):  
+        Eg[i] = M_totale*g*(-0.005*math.sin(theta[i]))  
+        Ec[i] = (L*l*H_imm*rho*g)*(math.cos(theta[i])*(((L**2)*math.tan(theta[i]))/12*H_imm)-math.sin(theta[i])*((3*(H_imm**2)-((L**2)*(math.tan(theta[i])**2)/4))/6*H_imm))    # énergie de poussée  
+    Etot = Eg+Ek+Ea+Ec              # énergie totale  
+  
+    """ Partie de code qui crée le graphique avec les différentes courbes et l'affiche """  
+  
+    plt.figure(1)  
+    plt.plot(t,Ek,label='Energie Cinetique')  
+    plt.plot(t,Eg,label='Energie potentiel')  
+    plt.plot(t,Ea,label='Energie charge')  
+    plt.plot(t,Etot,label='Energie total')  
+    plt.plot(t,Ec,label='Energie poussee')  
+    plt.xlabel("temps(s)")  
+    plt.ylabel("Energie (J)")  
+    plt.legend()  
+    plt.show()  
+  
+  
+def distance(d_max, v_deplacement):  
+    """ Crée un tableau d3, qui contient comme valeurs la distance de l'objet déplacé en fonction du temps et retourne celui-ci """  
+  
+    deplacement = v_deplacement * dt  # calcule le déplacement de l'objet en fonction du temps  
+    d = np.arange(0, d_max + deplacement, deplacement)  
+    d3 = np.empty_like(t)  
+  
+    """ On remplit notre tableau avec les valeurs croissantes de la distance de l'objet déplacé, une fois que la distance max est atteinte, 
+        le tableau est rempli de cette distance max jusqu'à ce qu'il atteigne la même dimension que la tableau t """  
+  
+    for i in range(len(t)):  
+        if len(d) - 1 < i:  
+            d3[i] = 0.7  
+        else:  
+            d3[i] = d[i]  
+  
+    return d3  
+  
+  
+def simulationv2():  
+    """ On calcule l'angle d'inclinaison, la vitesse angulaire, 
+        l'accélération angulaire et le couple résultant de la grue en fonction du temps avec une distance qui varie"""  
+  
+    d = distance(d_max, v_deplacement)  
+    C[0] = d[0] * M_poid * g  
+    a[0] = d[0] * M_poid * g / I  
+    w[0] = 0  
+    theta[0] = -0.045  
+    Ca[0] = C[0]  
+    for i in range(len(t) - 1):  
+        theta[i + 1] = theta[i] + w[i] * dt  
+        C[i + 1] = (d[i] * M_poid * g) - (L * l * H_imm * rho * g) * math.sin(theta[i]) * (  
+                    (L ** 2) / (12 * H_imm) - (((L ** 2) * (math.tan(theta[i]) ** 2) / 4) - 3 * (H_imm ** 2)) / (  
+                        6 * H_imm)) + (M_totale * g * (-H_cg * math.sin(theta[i])))  
+        a[i + 1] = (-D * w[i] + C[i]) / I  
+        w[i + 1] = w[i] + a[i] * dt  
+        Ca[i + 1] = d[i] * M_poid * g  
+  
+  
+def graphiquev2():  
+  
+  
+    """ Crée des graphiques correspondant aux tableaux calculés dans la fonction simulationv2() """  
+  
+    # graphiques de l'accélération angulaire, de la vitesse angulaire et de l'angle en fonction de temps  
+  
+    plt.figure(1)  
+    plt.subplot(3, 1, 1)  
+    plt.plot(t, a, label='a')  
+    plt.xlabel("temps(s)")  
+    plt.ylabel("a angulaire (rad/s**2)")  
+    plt.legend()  
+    plt.subplot(3, 1, 2)  
+    plt.plot(t, w * radians, 'orange', label='w')  
+    plt.xlabel("temps(s)")  
+    plt.ylabel("v angulaire (rad/s)")  
+    plt.legend()  
+    plt.subplot(3, 1, 3)  
+    plt.plot(t, theta * radians, 'green', label='theta')  
+    plt.xlabel("temps(s)")  
+    plt.ylabel("inclinaison (rad)")  
+    plt.legend()  
+    plt.show()  
+  
+  
+    # graphique du couple résultant en fonction du temps  
+  
+    plt.figure(2)  
+    plt.plot(t, Ca)  
+    plt.xlabel('temps (s)')  
+    plt.ylabel('couple applique (N.m)')  
+    plt.show()  
+  
+  
+def main(theta,d,M_poid):  
+  
+  
+    """ Calcule l'angle theta pour lequel la grue est à l'équilibre à une certaine distance d et le retourne"""  
+  
+    Pa = M_totale*g         # Poussée d'archmède  
+    Ca = d * M_poid * g     # Couple d'application  
+    Cr = Pa *(math.sin(math.radians(theta))*((L**2)/(12*H_imm)-(((L**2)*(math.tan(math.radians(theta))**2)/4)-3*(H_imm**2))/(6*H_imm)))  # couple résultant  
+  
+    """ Calcul de l'angle theta sous forme de binary search """  
+  
+    x = 0.01  
+    direction = 0  
+    while abs(Cr - Ca) > 0.001:  
+        if Ca > Cr:  
+            theta += x  
+            if direction == -1:  
+                x = x / 2  
+            direction = 1  
+  
+        else:  
+            theta -= x  
+  
+            if direction == 1:  
+                x = x / 2  
+            direction = -1  
+        Cr = Pa *(math.sin(math.radians(theta))*((L**2)/(12*H_imm)-(((L**2)*(math.tan(math.radians(theta))**2)/4)-3*(H_imm**2))/(6*H_imm)))  
+  
+    return theta  
+  
+  
+def theta_d(M_poid):  
+  
+    """ Rempli le tableau d_theta avec un poids choisi en paramètre grâce à la fonction main définie ci-dessus """  
+  
+    for i in range(len(d_increase)):  
+        d_theta[i] = main(0.5, d_increase[i], M_poid)  
+  
+  
+  
+simulation()  
+graphique()  
+energy()  
+simulationv2()  
+graphiquev2()  
